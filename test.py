@@ -1,3 +1,4 @@
+import random
 import socket
 import urllib.request
 
@@ -26,6 +27,6 @@ h = 20
 
 print('Start...')
 while True:
-    for x in range(w):
-        for y in range(h):
-            pixel(x + dx, y + dy, 0, 255, 0)
+    x = random.randint(0, w - 1)
+    y = random.randint(0, h - 1)
+    pixel(x + dx, y + dy, 0, 255, 0)
