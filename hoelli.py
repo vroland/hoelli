@@ -55,7 +55,6 @@ def main():
         cmd += f'PX {x} {y} {rgb}'.encode()
 
         if True:
-            print(cmd)
             sockets[i].send(cmd)
             cmd = b''
             i = (i + 1) % N_SOCKS
