@@ -1,17 +1,21 @@
 import random
 import socket
+import time
 import urllib.request
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(('151.217.111.34', 1234))
 
 L_CMD = 1024
+DT = 20.0
+
 
 def get_offset():
     # load offset
     offset = urllib.request.urlopen('http://hoellipixelflut.de/xy/').read()
 
     x, y = offset.decode().split()
+    print('New offset: ', x, y)
     return int(x), int(y)
 
 
@@ -38,6 +42,7 @@ print(w, h)
 
 print('Start...')
 cmd = b''
+time0 = 0
 while True:
     x = random.randint(0, w - 1)
     y = random.randint(0, h - 1)
@@ -51,3 +56,6 @@ while True:
     if len(cmd) > L_CMD:
         sock.send(cmd)
         cmd = b''
+        if time.time() - time0 > DT:
+            dx, dy = get_offset()
+            time0 = time.time()
