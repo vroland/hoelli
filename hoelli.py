@@ -51,10 +51,11 @@ def main():
         rgb = img[y][x]
         if rgb == '000000':
             continue
-        rgb = '00ff00'
+        rgb = 'ff0000'
         cmd += f'PX {x} {y} {rgb}'.encode()
 
         if True:
+            #print(cmd)
             sockets[i].send(cmd)
             cmd = b''
             i = (i + 1) % N_SOCKS
