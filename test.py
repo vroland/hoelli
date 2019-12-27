@@ -45,5 +45,4 @@ while True:
         continue
 
     cmd = f'PX {x + dx} {y + dy} {rgb}\n'.encode()
-    print(cmd)
     sock.send(cmd)
