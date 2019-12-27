@@ -14,6 +14,21 @@ def get_offset():
     return int(x), int(y)
 
 
+def get_img():
+    lines = urllib.request.urlopen(
+        'http://hoellipixelflut.de/hoelli.csv').read()
+    lines = lines.decode('utf-8').split('\n')[:-1]
+
+    img = []
+    for line in lines:
+        img.append(line.replace(' ', '').split(','))
+
+    h = len(img)
+    w = len(img[0])
+
+    return img, w, h
+
+
 def pixel(x, y, r, g, b):
     cmd = ('PX %d %d %02x%02x%02x\n' % (x, y, r, g, b)).encode()
     sock.send(cmd)
@@ -22,11 +37,11 @@ def pixel(x, y, r, g, b):
 dx, dy = get_offset()
 print(dx, dy)
 
-w = 20
-h = 20
+img, w, h = get_img()
+print(w, h)
 
 print('Start...')
 while True:
     x = random.randint(0, w - 1)
     y = random.randint(0, h - 1)
-    pixel(x + dx, y + dy, 0, 255, 0)
+    pixel(x + dx, y + dy, 255, 255, 0)
