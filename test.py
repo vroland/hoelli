@@ -13,9 +13,10 @@ for sock in sockets:
     sock.connect(('151.217.111.34', 1234))
 
 
-def get_offset():
+def get_offset(px_cnt=0):
     # load offset
-    offset = urllib.request.urlopen('http://hoellipixelflut.de/xy/').read()
+    url = f'http://hoellipixelflut.de/xy/?report={px_cnt}'
+    offset = urllib.request.urlopen(url).read()
 
     x, y = offset.decode().split()
     print('New offset: ', x, y)
@@ -46,6 +47,7 @@ print(w, h)
 print('Start...')
 time0 = 0
 i_sock = 0
+px_cnt = 0
 while True:
     x = random.randint(0, w - 1)
     y = random.randint(0, h - 1)
@@ -56,8 +58,10 @@ while True:
 
     cmd = f'PX {x + dx} {y + dy} {rgb}\n'.encode()
     sockets[i_sock].send(cmd)
+    px_cnt += 1
     i_sock = (i_sock + 1) % N_SOCKS
 
     if time.time() - time0 > DT:
-        dx, dy = get_offset()
+        dx, dy = get_offset(px_cnt)
         time0 = time.time()
+        px_cnt = 0
