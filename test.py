@@ -37,8 +37,13 @@ print(w, h)
 
 print('Start...')
 while True:
-    x = random.randint(0, w - 1) + dx
-    y = random.randint(0, h - 1) + dy
+    x = random.randint(0, w - 1)
+    y = random.randint(0, h - 1)
 
-    cmd = f'PX {x} {y} ffff00\n'.encode()
+    rgb = img[y][x]
+    if rgb == '000000':
+        continue
+
+    cmd = f'PX {x + dx} {y + dy} {rgb}\n'.encode()
+    print(cmd)
     sock.send(cmd)
