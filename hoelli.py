@@ -30,7 +30,8 @@ def get_img():
 
 
 def main():
-    DT = 20.0
+    DT_OFFSET = 20.0
+    DT_IMG = 60.0
     N_SOCKS = 16
 
     # connect
@@ -47,8 +48,10 @@ def main():
 
     print('Start...')
     time0 = 0
+    time1 = 0
     i_sock = 0
     px_cnt = 0
+    i = 0
     while True:
         x = random.randint(0, w - 1)
         y = random.randint(0, h - 1)
@@ -62,10 +65,17 @@ def main():
         px_cnt += 1
         i_sock = (i_sock + 1) % N_SOCKS
 
-        if time.time() - time0 > DT:
-            dx, dy = get_offset(px_cnt)
-            time0 = time.time()
-            px_cnt = 0
+        if i % 1024 == 0:
+            if time.time() - time0 > DT_OFFSET:
+                dx, dy = get_offset(px_cnt)
+                time0 = time.time()
+                px_cnt = 0
+
+            if time.time() - time1 > DT_IMG:
+                print('Update Image')
+                img, w, h = get_img()
+                time1 = time.time()
+        i += 1
 
 
 if __name__ == '__main__':
