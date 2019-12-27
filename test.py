@@ -5,6 +5,7 @@ import urllib.request
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(('151.217.111.34', 1234))
 
+L_CMD = 1024
 
 def get_offset():
     # load offset
@@ -36,6 +37,7 @@ img, w, h = get_img()
 print(w, h)
 
 print('Start...')
+cmd = b''
 while True:
     x = random.randint(0, w - 1)
     y = random.randint(0, h - 1)
@@ -44,5 +46,8 @@ while True:
     if rgb == '000000':
         continue
 
-    cmd = f'PX {x + dx} {y + dy} {rgb}\n'.encode()
-    sock.send(cmd)
+    cmd += f'PX {x + dx} {y + dy} {rgb}\n'.encode()
+
+    if len(cmd) > L_CMD:
+        sock.send(cmd)
+        cmd = b''
