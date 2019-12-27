@@ -6,7 +6,7 @@ import urllib.request
 
 def get_offset(px_cnt=0):
     # load offset
-    url = f'http://hoellipixelflut.de/xy/?report={px_cnt}'
+    url = 'http://hoellipixelflut.de/xy/?report={px_cnt}'.format(px_cnt=px_cnt)
     offset = urllib.request.urlopen(url).read()
 
     x, y = offset.decode().split()
@@ -60,7 +60,7 @@ def main():
         if rgb == '000000':
             continue
 
-        cmd = f'PX {x + dx} {y + dy} {rgb}\n'.encode()
+        cmd = 'PX {xx} {yy} {rgb}\n'.format(xx=x+dx, yy=y+dy, rgb=rgb).encode()
         sockets[i_sock].send(cmd)
         px_cnt += 1
         i_sock = (i_sock + 1) % N_SOCKS
