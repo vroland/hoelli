@@ -3,10 +3,14 @@ import socket
 import time
 import urllib.request
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect(('151.217.111.34', 1234))
-
 DT = 20.0
+N_SOCKS = 16
+
+# connect
+sockets = [socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+           for _ in range(N_SOCKS)]
+for sock in sockets:
+    sock.connect(('151.217.111.34', 1234))
 
 
 def get_offset():
@@ -41,6 +45,7 @@ print(w, h)
 
 print('Start...')
 time0 = 0
+i_sock = 0
 while True:
     x = random.randint(0, w - 1)
     y = random.randint(0, h - 1)
@@ -50,7 +55,8 @@ while True:
         continue
 
     cmd = f'PX {x + dx} {y + dy} {rgb}\n'.encode()
-    sock.send(cmd)
+    sockets[i_sock].send(cmd)
+    i_sock = (i_sock + 1) % N_SOCKS
 
     if time.time() - time0 > DT:
         dx, dy = get_offset()
