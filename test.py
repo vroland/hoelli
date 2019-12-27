@@ -6,7 +6,6 @@ import urllib.request
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(('151.217.111.34', 1234))
 
-L_CMD = 1024
 DT = 20.0
 
 
@@ -41,7 +40,6 @@ img, w, h = get_img()
 print(w, h)
 
 print('Start...')
-cmd = b''
 time0 = 0
 while True:
     x = random.randint(0, w - 1)
@@ -51,11 +49,9 @@ while True:
     if rgb == '000000':
         continue
 
-    cmd += f'PX {x + dx} {y + dy} {rgb}\n'.encode()
+    cmd = f'PX {x + dx} {y + dy} {rgb}\n'.encode()
+    sock.send(cmd)
 
-    if len(cmd) > L_CMD:
-        sock.send(cmd)
-        cmd = b''
-        if time.time() - time0 > DT:
-            dx, dy = get_offset()
-            time0 = time.time()
+    if time.time() - time0 > DT:
+        dx, dy = get_offset()
+        time0 = time.time()
