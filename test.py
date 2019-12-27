@@ -29,11 +29,6 @@ def get_img():
     return img, w, h
 
 
-def pixel(x, y, r, g, b):
-    cmd = ('PX %d %d %02x%02x%02x\n' % (x, y, r, g, b)).encode()
-    sock.send(cmd)
-
-
 dx, dy = get_offset()
 print(dx, dy)
 
@@ -42,6 +37,8 @@ print(w, h)
 
 print('Start...')
 while True:
-    x = random.randint(0, w - 1)
-    y = random.randint(0, h - 1)
-    pixel(x + dx, y + dy, 255, 255, 0)
+    x = random.randint(0, w - 1) + dx
+    y = random.randint(0, h - 1) + dy
+
+    cmd = f'PX {x} {y} ffff00\n'.encode()
+    sock.send(cmd)
