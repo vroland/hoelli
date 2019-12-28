@@ -82,32 +82,34 @@ def main():
     img = load_img(url)
 
     cmds = get_cmds(dx, dy, img)
+    cmd_string = b''.join(cmds)
 
     print('Let\'s Hölli...')
 
     time0 = time.time()
     i_sock = 0
     px_cnt = 0
+
     while True:
-        for cmd in cmds:
-            sockets[i_sock].send(cmd)
-            px_cnt += 1
-            i_sock = (i_sock + 1) % len(sockets)
+        sockets[i_sock].send(cmd_string)
+        px_cnt += len(cmds)
+        i_sock = (i_sock + 1) % len(sockets)
 
-            if time.time() - time0 > DT:
-                ndx, ndy, nurl = call_api(px_cnt)
+        if time.time() - time0 > DT:
+            ndx, ndy, nurl = call_api(px_cnt)
 
-                if nurl != url:
-                    url = nurl
-                    img = load_img(url)
-                    cmds = get_cmds(dx, dy, img)
+            if nurl != url:
+                url = nurl
+                img = load_img(url)
+                cmds = get_cmds(dx, dy, img)
 
-                if ndx != dx or ndy != dy:
-                    dx, dy = ndx, ndy
-                    cmds = get_cmds(dx, dy, img)
+            if ndx != dx or ndy != dy:
+                dx, dy = ndx, ndy
+                cmds = get_cmds(dx, dy, img)
 
-                time0 = time.time()
-                px_cnt = 0
+            time0 = time.time()
+            px_cnt = 0
+            cmd_string = b''.join(cmds)
 
 
 if __name__ == '__main__':
