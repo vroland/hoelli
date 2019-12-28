@@ -4,39 +4,42 @@ import time
 import urllib.request
 import sys
 
-DT_OFFSET = 20.0
-DT_IMG = 60.0
-MAX_SOCKS = 32
+DT = 10.0
+MAX_SOCKS = 16
 
 
-def get_offset(px_cnt=0):
-    print('Retrieving offset...', end='', flush=True)
-
+def call_api(px_cnt=0):
     # load offset
-    url = 'http://hoellipixelflut.de/xy/?report={px_cnt}'.format(px_cnt=px_cnt)
-    offset = urllib.request.urlopen(url).read()
+    url = 'http://hoellipixelflut.de/client-api/?report={px_cnt}'.format(
+        px_cnt=px_cnt)
+    response = urllib.request.urlopen(url).read()
 
-    x, y = offset.decode().split()
+    x, y, url = response.decode().split()
 
     x = int(x)
     y = int(y)
+    url = 'http://hoellipixelflut.de/images/' + url
 
-    print(' Done. New offset:', x, y)
-
-    return x, y
+    return x, y, url
 
 
-def get_cmds():
+def load_img(url):
     print('Retrieving image...', end='', flush=True)
 
-    lines = urllib.request.urlopen(
-        'http://hoellipixelflut.de/hoelli.csv').read()
+    lines = urllib.request.urlopen(url).read()
     lines = lines.decode('utf-8').split('\n')[:-1]
 
     img = []
     for line in lines:
         img.append(line.replace(' ', '').split(','))
 
+    print(' Done. New image dimensions:', len(img[0]), len(img))
+
+    return img
+
+
+def get_cmds(dx, dy, img):
+    print('Updating command list...', end='', flush=True)
     h = len(img)
     w = len(img[0])
 
@@ -50,11 +53,10 @@ def get_cmds():
             if len(rgb) != 6:
                 raise ValueError()
             cmds.append('PX {xx} {yy} {rgb}\n'.format(
-                xx=x, yy=y, rgb=rgb).encode())
-
-    print(' Done. New image dimensions:', w, h)
+                xx=x+dx, yy=y+dy, rgb=rgb).encode())
 
     random.shuffle(cmds)
+    print(' Done.')
 
     return cmds
 
@@ -76,41 +78,46 @@ def main():
 
     print(' Connected with {} sockets.'.format(len(sockets)))
 
-    dx, dy = get_offset()
+    dx, dy, url = call_api()
+    img = load_img(url)
 
-    cmds = get_cmds()
+    cmds = get_cmds(dx, dy, img)
 
     print('Let\'s Hölli...')
 
     time0 = time.time()
-    time1 = time.time()
     i_sock = 0
     px_cnt = 0
-    i = 0
     while True:
         for cmd in cmds:
             sockets[i_sock].send(cmd)
             px_cnt += 1
             i_sock = (i_sock + 1) % len(sockets)
 
-            if i % 4096 == 0:
-                if time.time() - time0 > DT_OFFSET:
-                    dx, dy = get_offset(px_cnt)
-                    time0 = time.time()
-                    px_cnt = 0
+            if time.time() - time0 > DT:
+                ndx, ndy, nurl = call_api(px_cnt)
 
-                if time.time() - time1 > DT_IMG:
-                    pixels, w, h = get_cmds()
-                    time1 = time.time()
-            i += 1
+                if nurl != url:
+                    url = nurl
+                    img = load_img(url)
+                    cmds = get_cmds(dx, dy, img)
+
+                if ndx != dx or ndy != dy:
+                    dx, dy = ndx, ndy
+                    cmds = get_cmds(dx, dy, img)
+
+                time0 = time.time()
+                px_cnt = 0
 
 
 if __name__ == '__main__':
     print('USAGE: python3 hoelli.py [MAX_SOCKETS]')
     if len(sys.argv) > 1:
         MAX_SOCKS = int(sys.argv[1])
+
     while True:
         try:
             main()
         except Exception as e:
-            print('An exception encountered: ', type(e),  e)
+            print('An exception encountered: ',
+                  type(e),  e, ' . Restarting...')
