@@ -2,6 +2,11 @@ import random
 import socket
 import time
 import urllib.request
+import sys
+
+DT_OFFSET = 20.0
+DT_IMG = 60.0
+MAX_SOCKS = 32
 
 
 def get_offset(px_cnt=0):
@@ -21,7 +26,7 @@ def get_offset(px_cnt=0):
     return x, y
 
 
-def get_img():
+def get_cmds():
     print('Retrieving image...', end='', flush=True)
 
     lines = urllib.request.urlopen(
@@ -35,7 +40,7 @@ def get_img():
     h = len(img)
     w = len(img[0])
 
-    pixels = []
+    cmds = []
     for y in range(h):
         for x in range(w):
             rgb = img[y][x]
@@ -44,20 +49,17 @@ def get_img():
             int(rgb, 16)
             if len(rgb) != 6:
                 raise ValueError()
-            pixels.append((x, y, rgb))
+            cmds.append('PX {xx} {yy} {rgb}\n'.format(
+                xx=x, yy=y, rgb=rgb).encode())
 
     print(' Done. New image dimensions:', w, h)
 
-    random.shuffle(pixels)
+    random.shuffle(cmds)
 
-    return pixels, w, h
+    return cmds
 
 
 def main():
-    DT_OFFSET = 20.0
-    DT_IMG = 60.0
-    MAX_SOCKS = 32
-
     # connect
     print('Connecting to the C3 Pixel Flut wall...', end='', flush=True)
     sockets = []
@@ -76,7 +78,7 @@ def main():
 
     dx, dy = get_offset()
 
-    pixels, w, h = get_img()
+    cmds = get_cmds()
 
     print('Let\'s Hölli...')
 
@@ -86,9 +88,8 @@ def main():
     px_cnt = 0
     i = 0
     while True:
-        for x, y, rgb in pixels:
-            cmd = 'PX {xx} {yy} {rgb}\n'.format(
-                xx=x+dx, yy=y+dy, rgb=rgb).encode()
+        for cmd in cmds:
+            print(cmd)
             sockets[i_sock].send(cmd)
             px_cnt += 1
             i_sock = (i_sock + 1) % len(sockets)
@@ -100,12 +101,15 @@ def main():
                     px_cnt = 0
 
                 if time.time() - time1 > DT_IMG:
-                    pixels, w, h = get_img()
+                    pixels, w, h = get_cmds()
                     time1 = time.time()
             i += 1
 
 
 if __name__ == '__main__':
+    print('USAGE: python3 hoelli.py [MAX_SOCKETS]')
+    if len(sys.argv) > 1:
+        MAX_SOCKS = int(sys.argv[1])
     while True:
         try:
             main()
