@@ -35,9 +35,22 @@ def get_img():
     h = len(img)
     w = len(img[0])
 
+    pixels = []
+    for y in range(h):
+        for x in range(w):
+            rgb = img[y][x]
+            if rgb == '000000':
+                continue
+            int(rgb, 16)
+            if len(rgb) != 6:
+                raise ValueError()
+            pixels.append((x, y, rgb))
+
     print(' Done. New image dimensions:', w, h)
 
-    return img, w, h
+    random.shuffle(pixels)
+
+    return pixels, w, h
 
 
 def main():
@@ -63,7 +76,7 @@ def main():
 
     dx, dy = get_offset()
 
-    img, w, h = get_img()
+    pixels, w, h = get_img()
 
     print('Let\'s Hölli...')
 
@@ -73,33 +86,23 @@ def main():
     px_cnt = 0
     i = 0
     while True:
-        x = random.randint(0, w - 1)
-        y = random.randint(0, h - 1)
+        for x, y, rgb in pixels:
+            cmd = 'PX {xx} {yy} {rgb}\n'.format(
+                xx=x+dx, yy=y+dy, rgb=rgb).encode()
+            sockets[i_sock].send(cmd)
+            px_cnt += 1
+            i_sock = (i_sock + 1) % len(sockets)
 
-        rgb = img[y][x]
-        int(rgb, 16)
+            if i % 4096 == 0:
+                if time.time() - time0 > DT_OFFSET:
+                    dx, dy = get_offset(px_cnt)
+                    time0 = time.time()
+                    px_cnt = 0
 
-        if len(rgb) != 6:
-            raise ValueError()
-
-        if rgb == '000000':
-            continue
-
-        cmd = 'PX {xx} {yy} {rgb}\n'.format(xx=x+dx, yy=y+dy, rgb=rgb).encode()
-        sockets[i_sock].send(cmd)
-        px_cnt += 1
-        i_sock = (i_sock + 1) % len(sockets)
-
-        if i % 1024 == 0:
-            if time.time() - time0 > DT_OFFSET:
-                dx, dy = get_offset(px_cnt)
-                time0 = time.time()
-                px_cnt = 0
-
-            if time.time() - time1 > DT_IMG:
-                img, w, h = get_img()
-                time1 = time.time()
-        i += 1
+                if time.time() - time1 > DT_IMG:
+                    pixels, w, h = get_img()
+                    time1 = time.time()
+            i += 1
 
 
 if __name__ == '__main__':
