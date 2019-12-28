@@ -5,16 +5,25 @@ import urllib.request
 
 
 def get_offset(px_cnt=0):
+    print('Retrieving offset...', end='', flush=True)
+
     # load offset
     url = 'http://hoellipixelflut.de/xy/?report={px_cnt}'.format(px_cnt=px_cnt)
     offset = urllib.request.urlopen(url).read()
 
     x, y = offset.decode().split()
-    print('New offset: ', x, y)
-    return int(x), int(y)
+
+    x = int(x)
+    y = int(y)
+
+    print(' Done. New offset:', x, y)
+
+    return x, y
 
 
 def get_img():
+    print('Retrieving image...', end='', flush=True)
+
     lines = urllib.request.urlopen(
         'http://hoellipixelflut.de/hoelli.csv').read()
     lines = lines.decode('utf-8').split('\n')[:-1]
@@ -26,29 +35,40 @@ def get_img():
     h = len(img)
     w = len(img[0])
 
+    print(' Done. New image dimensions:', w, h)
+
     return img, w, h
 
 
 def main():
     DT_OFFSET = 20.0
     DT_IMG = 60.0
-    N_SOCKS = 16
+    MAX_SOCKS = 32
 
     # connect
-    sockets = [socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-               for _ in range(N_SOCKS)]
-    for sock in sockets:
-        sock.connect(('151.217.111.34', 1234))
+    print('Connecting to the C3 Pixel Flut wall...', end='', flush=True)
+    sockets = []
+    for _ in range(MAX_SOCKS):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect(('151.217.111.34', 1234))
+        except ConnectionRefusedError:
+            break
+        sockets.append(sock)
+
+    if len(sockets) < 1:
+        raise ConnectionRefusedError('Could not connect with any socket.')
+
+    print(' Connected with {} sockets.'.format(len(sockets)))
 
     dx, dy = get_offset()
-    print(dx, dy)
 
     img, w, h = get_img()
-    print(w, h)
 
-    print('Start...')
-    time0 = 0
-    time1 = 0
+    print('Let\'s Hölli...')
+
+    time0 = time.time()
+    time1 = time.time()
     i_sock = 0
     px_cnt = 0
     i = 0
@@ -57,13 +77,18 @@ def main():
         y = random.randint(0, h - 1)
 
         rgb = img[y][x]
+        int(rgb, 16)
+
+        if len(rgb) != 6:
+            raise ValueError()
+
         if rgb == '000000':
             continue
 
         cmd = 'PX {xx} {yy} {rgb}\n'.format(xx=x+dx, yy=y+dy, rgb=rgb).encode()
         sockets[i_sock].send(cmd)
         px_cnt += 1
-        i_sock = (i_sock + 1) % N_SOCKS
+        i_sock = (i_sock + 1) % len(sockets)
 
         if i % 1024 == 0:
             if time.time() - time0 > DT_OFFSET:
@@ -72,7 +97,6 @@ def main():
                 px_cnt = 0
 
             if time.time() - time1 > DT_IMG:
-                print('Update Image')
                 img, w, h = get_img()
                 time1 = time.time()
         i += 1
@@ -82,5 +106,5 @@ if __name__ == '__main__':
     while True:
         try:
             main()
-        except Exception:
-            pass
+        except Exception as e:
+            print('An exception encountered: ', type(e),  e)
