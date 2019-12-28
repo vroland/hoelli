@@ -89,7 +89,6 @@ def main():
     i = 0
     while True:
         for cmd in cmds:
-            print(cmd)
             sockets[i_sock].send(cmd)
             px_cnt += 1
             i_sock = (i_sock + 1) % len(sockets)
